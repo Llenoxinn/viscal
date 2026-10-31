@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { computeLissajous, LISS_PRESETS } from '../engines/lissajous'
+import { ART_COLOR } from '../utils/theme'
 import ControlPanel, { PresetSelector } from './ControlPanel'
 import ExportButton from './ExportButton'
 import StudioLayout from './StudioLayout'
@@ -9,9 +10,9 @@ const DEFAULTS = {
   A: 1,
   B: 1,
   points: 2000,
-  strokeColor: '#c5f277',
-  strokeWidth: 1.5,
-  alpha: 0.9
+  strokeColor: ART_COLOR,
+  strokeWidth: 2,
+  alpha: 1
 }
 const GEOMETRY = [
   { label: 'X frequency', key: 'a', min: 1, max: 10 },

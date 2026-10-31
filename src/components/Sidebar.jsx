@@ -12,10 +12,10 @@ export default function Sidebar() {
             viscal<span className="brand-dot">.</span>
           </span>
         </a>
-        <span className="header-caption">
-          A playground for mathematical beauty
-        </span>
-        <div className="header-actions">
+        <nav className="header-navigation" aria-label="Main navigation">
+          <a className="header-studio-link" href="#studio">
+            Studio
+          </a>
           <button
             className="text-button"
             onClick={() => dialogRef.current.showModal()}
@@ -32,18 +32,18 @@ export default function Sidebar() {
             Source code
             <Icon name="arrow" size={16} />
           </a>
-        </div>
+        </nav>
       </header>
       <dialog
         ref={dialogRef}
         className="about-dialog"
         aria-labelledby="about-title"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) event.currentTarget.close()
-        }}
+        closedby="any"
       >
         <div className="dialog-heading">
-          <span className="eyebrow">THE BEAUTY OF A SIMPLE RULE</span>
+          <span className="dialog-kicker">
+            A simple rule. A beautiful result.
+          </span>
           <button
             className="icon-button"
             aria-label="Close explanation"

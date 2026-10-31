@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "react-hooks", "jsx-a11y", "oxc"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error"
+  },
+  "env": { "browser": true, "node": true },
+  "ignorePatterns": ["dist/**", "output/**", "node_modules/**"],
+  "overrides": [
+    {
+      "files": ["src/components/*Canvas.jsx"],
+      "rules": { "jsx-a11y/prefer-tag-over-role": "off" }
+    }
+  ]
+}

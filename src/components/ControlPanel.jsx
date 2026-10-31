@@ -9,7 +9,7 @@ export default function ControlPanel({
   const id = useId()
   return (
     <fieldset className="control-group">
-      <legend className="section-label">{title}</legend>
+      <legend className={title === 'Parameters' ? 'sr-only' : 'section-label'}>{title}</legend>
       {controls.map(
         ({ label, key, type = 'range', min, max, step = 1, format }) => {
           const inputId = `${id}-${key}`

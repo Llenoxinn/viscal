@@ -1,4 +1,4 @@
-const BACKGROUND = '#111411'
+import { ART_BACKGROUND as BACKGROUND } from '../utils/theme'
 
 function downloadBlob(blob, filename) {
   if (!blob)
