@@ -1,80 +1,98 @@
-/**
- * useExport.js
- * Provides export functions for Canvas (PNG) and SVG elements.
- */
+const BACKGROUND = '#111411'
 
-/**
- * Download a canvas as a PNG file.
- * @param {React.RefObject<HTMLCanvasElement>} canvasRef
- * @param {string} filename - without extension
- */
-export function exportPNG(canvasRef, filename = 'viscal') {
-  const canvas = canvasRef?.current
-  if (!canvas) return
-  canvas.toBlob((blob) => {
-    if (!blob) return
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${filename}.png`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, 'image/png')
+function downloadBlob(blob, filename) {
+  if (!blob)
+    throw new Error('The browser could not create an image. Try again.')
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.append(link)
+  link.click()
+  link.remove()
+  // Let the browser consume the download before releasing its URL.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-/**
- * Download an SVG element as an .svg file.
- * @param {React.RefObject<SVGElement>} svgRef
- * @param {string} filename - without extension
- */
-export function exportSVG(svgRef, filename = 'viscal') {
-  const svg = svgRef?.current
-  if (!svg) return
-
+function serializeSVG(svg, width, height, strokeScale = 1) {
   const clone = svg.cloneNode(true)
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-
-  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-  bg.setAttribute('width', '100%')
-  bg.setAttribute('height', '100%')
-  bg.setAttribute('fill', '#0a0a0a')
-  clone.insertBefore(bg, clone.firstChild)
-
-  const serializer = new XMLSerializer()
-  const svgStr = serializer.serializeToString(clone)
-  const blob = new Blob([svgStr], { type: 'image/svg+xml' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${filename}.svg`
-  a.click()
-  URL.revokeObjectURL(url)
+  clone.setAttribute('width', width)
+  clone.setAttribute('height', height)
+  clone.removeAttribute('class')
+  for (const path of clone.querySelectorAll(
+    '[vector-effect="non-scaling-stroke"]'
+  ))
+    path.setAttribute(
+      'stroke-width',
+      Number(path.getAttribute('stroke-width')) * strokeScale
+    )
+  const { x, y, width: vbWidth, height: vbHeight } = svg.viewBox.baseVal
+  const background = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'rect'
+  )
+  for (const [key, value] of Object.entries({
+    x,
+    y,
+    width: vbWidth,
+    height: vbHeight,
+    fill: BACKGROUND
+  }))
+    background.setAttribute(key, value)
+  clone.prepend(background)
+  return new XMLSerializer().serializeToString(clone)
 }
 
-/**
- * Export canvas as high-resolution PNG by rendering at 2x scale.
- * @param {React.RefObject<HTMLCanvasElement>} canvasRef
- * @param {string} filename
- */
-export function exportHighResPNG(canvasRef, filename = 'viscal') {
-  const canvas = canvasRef?.current
-  if (!canvas) return
+export function exportSVG(svgRef, filename = 'viscal') {
+  const svg = svgRef?.current
+  if (!svg) throw new Error('No artwork is available yet.')
+  const { width, height } = svg.getBoundingClientRect()
+  downloadBlob(
+    new Blob([serializeSVG(svg, Math.round(width), Math.round(height))], {
+      type: 'image/svg+xml'
+    }),
+    `${filename}.svg`
+  )
+}
 
-  const scale = 2
-  const offscreen = document.createElement('canvas')
-  offscreen.width  = canvas.width  * scale
-  offscreen.height = canvas.height * scale
-  const ctx = offscreen.getContext('2d')
-  ctx.scale(scale, scale)
-  ctx.drawImage(canvas, 0, 0)
+export async function exportPNG(ref, filename = 'viscal', scale = 1) {
+  const source = ref?.current
+  if (!source) throw new Error('No artwork is available yet.')
+  const isSVG = source instanceof SVGElement
+  const bounds = source.getBoundingClientRect()
+  const width = Math.round(isSVG ? bounds.width : source.width)
+  const height = Math.round(isSVG ? bounds.height : source.height)
+  if (!width || !height) throw new Error('The artwork has no visible size.')
+  const canvas = document.createElement('canvas')
+  canvas.width = width * scale
+  canvas.height = height * scale
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Canvas is unavailable in this browser.')
+  context.fillStyle = BACKGROUND
+  context.fillRect(0, 0, canvas.width, canvas.height)
 
-  offscreen.toBlob((blob) => {
-    if (!blob) return
+  if (isSVG) {
+    // Rasterize the vector at the target size; do not upscale a low-resolution bitmap.
+    const blob = new Blob(
+      [serializeSVG(source, canvas.width, canvas.height, scale)],
+      { type: 'image/svg+xml' }
+    )
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${filename}@2x.png`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, 'image/png')
+    try {
+      const image = new Image()
+      image.src = url
+      await image.decode()
+      context.drawImage(image, 0, 0)
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  } else {
+    context.imageSmoothingEnabled = false
+    context.drawImage(source, 0, 0, canvas.width, canvas.height)
+  }
+  const blob = await new Promise((resolve) =>
+    canvas.toBlob(resolve, 'image/png')
+  )
+  downloadBlob(blob, `${filename}${scale === 2 ? '@2x' : ''}.png`)
 }

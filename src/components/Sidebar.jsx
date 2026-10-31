@@ -1,58 +1,83 @@
-import { useState } from 'react'
+import { useRef } from 'react'
+import Icon, { CurveMark } from './Icon'
 
-/**
- * Sidebar
- * Collapsible left panel. Contains the Viscal wordmark and info.
- */
 export default function Sidebar() {
-  const [open, setOpen] = useState(true)
-
+  const dialogRef = useRef(null)
   return (
-    <aside
-      className={`flex flex-col border-r border-border bg-panel transition-all duration-200
-        ${open ? 'w-56' : 'w-10'}`}
-    >
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-between px-3 py-4 text-muted hover:text-white transition-colors"
-        title={open ? 'Collapse sidebar' : 'Expand sidebar'}
-      >
-        {open && (
-          <span className="font-mono text-sm tracking-widest text-white">
-            VISCAL
+    <>
+      <header className="app-header">
+        <a className="brand" href="./" aria-label="Viscal home">
+          <CurveMark />
+          <span>
+            viscal<span className="brand-dot">.</span>
           </span>
-        )}
-        <span className="text-xs">{open ? '\u2039' : '\u203a'}</span>
-      </button>
-
-      {open && (
-        <div className="px-3 flex flex-col gap-5 mt-2">
-          <div>
-            <p className="text-xs text-muted font-mono leading-relaxed">
-              A browser-based generative art playground. Create parametric visuals driven by
-              math — Lissajous curves, L-Systems, and reaction-diffusion simulations.
-            </p>
-          </div>
-
-          <div className="border-t border-border pt-4 flex flex-col gap-3">
-            <div>
-              <p className="text-[10px] text-muted font-mono uppercase tracking-widest">Engines</p>
-              <ul className="mt-1.5 flex flex-col gap-1">
-                <li className="text-xs text-accent font-mono">\u25c6 Lissajous</li>
-                <li className="text-xs text-accent font-mono">\u25c6 L-System</li>
-                <li className="text-xs text-accent font-mono">\u25c6 React-Diff</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-4 mt-auto">
-            <p className="text-[10px] text-muted font-mono leading-relaxed">
-              Made with love by Llenoxinn
-            </p>
-            <p className="text-[10px] text-muted font-mono mt-1">v1.0.0</p>
-          </div>
+        </a>
+        <span className="header-caption">
+          A playground for mathematical beauty
+        </span>
+        <div className="header-actions">
+          <button
+            className="text-button"
+            onClick={() => dialogRef.current.showModal()}
+          >
+            <Icon name="info" />
+            <span>Behind the shapes</span>
+          </button>
+          <a
+            className="text-button source-link"
+            href="https://github.com/Llenoxinn/viscal"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Source code
+            <Icon name="arrow" size={16} />
+          </a>
         </div>
-      )}
-    </aside>
+      </header>
+      <dialog
+        ref={dialogRef}
+        className="about-dialog"
+        aria-labelledby="about-title"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) event.currentTarget.close()
+        }}
+      >
+        <div className="dialog-heading">
+          <span className="eyebrow">THE BEAUTY OF A SIMPLE RULE</span>
+          <button
+            className="icon-button"
+            aria-label="Close explanation"
+            onClick={() => dialogRef.current.close()}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+        <h2 id="about-title">Math, made visible.</h2>
+        <p>
+          Viscal turns small mathematical rules into things worth looking at.
+          Pick an engine, change a few numbers, and see what emerges.
+        </p>
+        <h3>Lissajous curves</h3>
+        <p>
+          Two sine waves, one for each axis. Their frequencies and phase offset
+          weave a closed, repeating path.
+        </p>
+        <h3>L-Systems</h3>
+        <p>
+          A short string grows by repeating a set of replacement rules. A
+          virtual pen follows the result to draw plants and fractals.
+        </p>
+        <h3>Reaction diffusion</h3>
+        <p>
+          Two virtual chemicals react and spread through a grid. The Gray–Scott
+          model produces spots, stripes, and organic patterns. Paint on the
+          canvas to add a seed, or use the centered seed button.
+        </p>
+        <p className="dialog-note">
+          Everything is generated in your browser. Your artwork stays on your
+          device.
+        </p>
+      </dialog>
+    </>
   )
 }

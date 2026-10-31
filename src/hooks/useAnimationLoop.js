@@ -1,27 +1,34 @@
 import { useEffect, useRef } from 'react'
 
-/**
- * useAnimationLoop
- * Calls `callback` every animation frame while `running` is true.
- * @param {function} callback - called with no args each frame
- * @param {boolean}  running  - pause/resume control
- */
 export function useAnimationLoop(callback, running = true) {
-  const rafRef = useRef(null)
-  const cbRef  = useRef(callback)
-
-  useEffect(() => { cbRef.current = callback }, [callback])
-
+  const callbackRef = useRef(callback)
   useEffect(() => {
-    if (!running) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      return
+    callbackRef.current = callback
+  }, [callback])
+  useEffect(() => {
+    if (!running) return
+    let frame
+    let previous = 0
+    const tick = (time) => {
+      // Keep simulation speed and CPU use independent of high-refresh-rate displays.
+      if (time - previous >= 1000 / 30) {
+        callbackRef.current()
+        previous = time
+      }
+      frame = requestAnimationFrame(tick)
     }
-    const tick = () => {
-      cbRef.current()
-      rafRef.current = requestAnimationFrame(tick)
+    const syncVisibility = () => {
+      cancelAnimationFrame(frame)
+      if (!document.hidden) {
+        previous = 0
+        frame = requestAnimationFrame(tick)
+      }
     }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
+    syncVisibility()
+    document.addEventListener('visibilitychange', syncVisibility)
+    return () => {
+      cancelAnimationFrame(frame)
+      document.removeEventListener('visibilitychange', syncVisibility)
+    }
   }, [running])
 }

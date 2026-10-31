@@ -1,65 +1,86 @@
-import { useState } from 'react'
+import { useId } from 'react'
 
-/**
- * ControlPanel
- * Renders a list of labeled controls (range sliders, color pickers).
- *
- * @param {object[]} controls  - array of control descriptors
- * @param {object}   params    - current values
- * @param {function} onChange  - (key, value) => void
- */
-export default function ControlPanel({ controls, params, onChange }) {
-  const [open, setOpen] = useState(true)
-
+export default function ControlPanel({
+  controls,
+  params,
+  onChange,
+  title = 'Parameters'
+}) {
+  const id = useId()
   return (
-    <div className="absolute top-4 right-4 w-64 bg-panel border border-border rounded z-10">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted hover:text-white transition-colors"
-      >
-        <span className="font-mono uppercase tracking-widest">params</span>
-        <span>{open ? '\u2212' : '+'}</span>
-      </button>
-
-      {open && (
-        <div className="px-3 pb-3 flex flex-col gap-3">
-          {controls.map(({ label, key, type, min, max, step }) => (
-            <div key={key} className="flex flex-col gap-1">
-              <div className="flex justify-between text-xs text-muted">
-                <span>{label}</span>
-                {type === 'range' && (
-                  <span className="text-accent">
-                    {typeof params[key] === 'number'
-                      ? params[key].toFixed(step < 1 ? 2 : 0)
-                      : params[key]}
-                  </span>
-                )}
+    <fieldset className="control-group">
+      <legend className="section-label">{title}</legend>
+      {controls.map(
+        ({ label, key, type = 'range', min, max, step = 1, format }) => {
+          const inputId = `${id}-${key}`
+          const decimals = String(step).split('.')[1]?.length ?? 0
+          return (
+            <div
+              className={`control ${type === 'color' ? 'color-control' : ''}`}
+              key={key}
+            >
+              <div className="control-label">
+                <label htmlFor={inputId}>{label}</label>
+                <output htmlFor={inputId}>
+                  {format
+                    ? format(params[key])
+                    : typeof params[key] === 'number'
+                      ? params[key].toFixed(decimals)
+                      : params[key].toUpperCase()}
+                </output>
               </div>
-
-              {type === 'range' && (
-                <input
-                  type="range"
-                  min={min}
-                  max={max}
-                  step={step}
-                  value={params[key]}
-                  onChange={(e) => onChange(key, parseFloat(e.target.value))}
-                  className="w-full accent-accent h-1 bg-border rounded"
-                />
-              )}
-
-              {type === 'color' && (
-                <input
-                  type="color"
-                  value={params[key]}
-                  onChange={(e) => onChange(key, e.target.value)}
-                  className="w-full h-7 bg-transparent border border-border rounded cursor-pointer"
-                />
-              )}
+              <input
+                id={inputId}
+                type={type}
+                min={min}
+                max={max}
+                step={step}
+                value={params[key]}
+                onChange={(event) =>
+                  onChange(
+                    key,
+                    type === 'range'
+                      ? Number(event.target.value)
+                      : event.target.value
+                  )
+                }
+                style={
+                  type === 'range'
+                    ? {
+                        '--range-progress': `${((params[key] - min) / (max - min)) * 100}%`
+                      }
+                    : undefined
+                }
+              />
             </div>
-          ))}
-        </div>
+          )
+        }
       )}
+    </fieldset>
+  )
+}
+
+export function PresetSelector({ presets, value, onChange }) {
+  const id = useId()
+  return (
+    <div className="preset-control">
+      <label className="section-label" htmlFor={id}>
+        Starting point
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {value === 'custom' && (
+          <option value="custom">Custom exploration</option>
+        )}
+        {Object.entries(presets).map(([key, preset]) => (
+          <option key={key} value={key}>
+            {preset.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

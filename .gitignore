@@ -1,5 +1,24 @@
+# Dependencies and generated output (including nested packages).
 node_modules/
 dist/
-.DS_Store
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local secrets and machine-specific files.
+.env
+.env.*
+!.env.example
 *.local
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local working material and browser artifacts.
 prompts/
+.worktrees/
+.playwright-cli/
+output/
