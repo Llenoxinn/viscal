@@ -21,9 +21,8 @@ export default function StudioLayout({
       <div className="preview-panel">
         <div className="preview-toolbar">
           <div className="preview-title">
-            <span className="status-dot" />
-            <span>Live preview</span>
-            <span className="preview-slash">/</span>
+            <span>Your canvas</span>
+            <span className="preview-slash" aria-hidden="true" />
             <span className="preview-engine">{title}</span>
           </div>
           <div className="preview-actions">
@@ -40,14 +39,6 @@ export default function StudioLayout({
           </div>
         </div>
         <div className={`artboard ${grid ? 'with-grid' : ''}`}>
-          <span className="canvas-label">
-            VISCAL — EXPERIMENT{' '}
-            {title === 'Lissajous'
-              ? '001'
-              : title === 'L-System'
-                ? '002'
-                : '003'}
-          </span>
           <div className="artwork">{children}</div>
           <div className="canvas-bottom">
             <span className="canvas-hint">
@@ -69,8 +60,7 @@ export default function StudioLayout({
       <aside className="parameters-panel" aria-label={`${title} controls`}>
         <div className="parameters-heading">
           <div>
-            <span className="eyebrow">YOUR EXPERIMENT</span>
-            <h2>{title}</h2>
+            <h2>Make it yours</h2>
           </div>
           <Icon name="sliders" />
         </div>

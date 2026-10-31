@@ -1,23 +1,20 @@
-import Icon, { CurveMark } from './Icon'
+import { CurveMark } from './Icon'
 
 export const ENGINES = [
   {
     key: 'lissajous',
     label: 'Lissajous curves',
-    description: 'Find harmony in oscillation',
-    tag: 'PARAMETRIC'
+    description: 'Beautiful patterns from two simple waves.'
   },
   {
     key: 'lsystem',
     label: 'L-Systems',
-    description: 'Simple rules. Complex worlds.',
-    tag: 'FRACTAL'
+    description: 'Grow organic structures with simple rules.'
   },
   {
     key: 'rd',
     label: 'Reaction diffusion',
-    description: 'Let organic patterns emerge',
-    tag: 'SIMULATION'
+    description: 'Let patterns emerge from simple interactions.'
   }
 ]
 
@@ -28,7 +25,7 @@ export default function EngineSelector({ active, onChange }) {
       role="tablist"
       aria-label="Generative engines"
     >
-      {ENGINES.map(({ key, label, description, tag }, index) => (
+      {ENGINES.map(({ key, label, description }, index) => (
         <button
           key={key}
           id={`tab-${key}`}
@@ -51,19 +48,10 @@ export default function EngineSelector({ active, onChange }) {
             document.getElementById(`tab-${ENGINES[next].key}`).focus()
           }}
         >
-          <span className="engine-art">
-            <CurveMark variant={key} />
-          </span>
+          <CurveMark variant={key} className="engine-art" />
           <span className="engine-copy">
-            <span className="engine-overline">
-              0{index + 1}
-              <span>{tag}</span>
-            </span>
             <span className="engine-title">{label}</span>
             <span className="engine-description">{description}</span>
-          </span>
-          <span className="engine-arrow">
-            <Icon name={active === key ? 'check' : 'chevron'} size={16} />
           </span>
         </button>
       ))}

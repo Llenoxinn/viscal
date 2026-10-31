@@ -24,7 +24,13 @@ export function colormapGray(t) {
   return [v, v, v]
 }
 
+export function colormapYellow(t) {
+  const value = 20 + Math.round(Math.max(0, Math.min(1, t)) * 235)
+  return [value, value, Math.round(20 * (1 - Math.max(0, Math.min(1, t))))]
+}
+
 export const COLORMAPS = {
+  yellow: { label: 'Electric yellow', fn: colormapYellow },
   green: { label: 'Acid green', fn: colormapGreen },
   thermal: { label: 'Thermal', fn: colormapThermal },
   gray: { label: 'Grayscale', fn: colormapGray }

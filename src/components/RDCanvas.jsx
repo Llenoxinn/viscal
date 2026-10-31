@@ -29,21 +29,22 @@ export default function RDCanvas({ active }) {
   const stateRef = useRef(null)
   const pointerRef = useRef(null)
   const warmedRef = useRef(false)
-  if (!stateRef.current) stateRef.current = createGrid(GRID_W, GRID_H)
   const [params, setParams] = useState(DEFAULTS)
   const [running, setRunning] = useState(
     () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
-  const [colormap, setColormap] = useState('green')
+  const [colormap, setColormap] = useState('yellow')
   const [preset, setPreset] = useState('spots')
   const paletteId = useId()
 
   const draw = useCallback(() => {
     const context = canvasRef.current?.getContext('2d')
-    if (context) renderGrid(context, stateRef.current, COLORMAPS[colormap].fn)
+    if (context && stateRef.current)
+      renderGrid(context, stateRef.current, COLORMAPS[colormap].fn)
   }, [colormap])
   useEffect(() => {
     if (!active) return
+    if (!stateRef.current) stateRef.current = createGrid(GRID_W, GRID_H)
     if (!warmedRef.current) {
       stepGrid(stateRef.current, { ...params, steps: 100 })
       warmedRef.current = true
@@ -89,7 +90,7 @@ export default function RDCanvas({ active }) {
       onReset={() => {
         setParams(DEFAULTS)
         setPreset('spots')
-        setColormap('green')
+        setColormap('yellow')
         resetGrid(DEFAULTS)
       }}
       onRandomize={() => {

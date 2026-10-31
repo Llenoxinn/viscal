@@ -53,9 +53,7 @@ export default function ExportButton({
         <Icon name="download" size={15} />
         <span>{busy ? 'Exporting…' : 'Export'}</span>
       </button>
-      <span className="export-status sr-only" role="status">
-        {message}
-      </span>
+      <output className="export-status sr-only">{message}</output>
       {message.startsWith('Export failed') && (
         <span className="export-error">{message}</span>
       )}

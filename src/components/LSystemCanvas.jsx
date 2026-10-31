@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react'
 import { expandLSystem, turtleWalk, PRESETS } from '../engines/lsystem'
+import { ART_COLOR } from '../utils/theme'
 import ControlPanel, { PresetSelector } from './ControlPanel'
 import ExportButton from './ExportButton'
 import StudioLayout from './StudioLayout'
@@ -14,7 +15,7 @@ export default function LSystemCanvas() {
   const [preset, setPreset] = useState('plant')
   const [params, setParams] = useState(PRESETS.plant)
   const [style, setStyle] = useState({
-    strokeColor: '#c5f277',
+    strokeColor: ART_COLOR,
     strokeWidth: 1.2
   })
   const geometry = useMemo(() => {
@@ -82,7 +83,7 @@ export default function LSystemCanvas() {
       error={geometry.error}
       onReset={() => {
         selectPreset('plant')
-        setStyle({ strokeColor: '#c5f277', strokeWidth: 1.2 })
+        setStyle({ strokeColor: ART_COLOR, strokeWidth: 1.2 })
       }}
       onRandomize={() => {
         const keys = Object.keys(PRESETS)

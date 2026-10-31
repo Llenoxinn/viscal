@@ -9,7 +9,7 @@ import {
   renderGrid,
   RD_PRESETS
 } from '../src/engines/grayscott.js'
-import { colormapGreen } from '../src/utils/colormap.js'
+import { colormapGreen, colormapYellow } from '../src/utils/colormap.js'
 import { forbiddenPaths } from '../scripts/repo-paths.mjs'
 
 test('Lissajous presets stay within their amplitudes and close at integer frequencies', () => {
@@ -154,4 +154,18 @@ test('Repository hygiene catches nested dependencies and secrets but keeps the l
       'config.local'
     ]
   )
+})
+
+test('Electric yellow palette clamps endpoints and keeps every channel in range', () => {
+  assert.deepEqual(colormapYellow(0), [20, 20, 20])
+  assert.deepEqual(colormapYellow(1), [255, 255, 0])
+  assert.deepEqual(colormapYellow(-1), colormapYellow(0))
+  assert.deepEqual(colormapYellow(2), colormapYellow(1))
+  for (let index = 0; index <= 255; index++) {
+    assert.ok(
+      colormapYellow(index / 255).every(
+        (value) => Number.isInteger(value) && value >= 0 && value <= 255
+      )
+    )
+  }
 })
