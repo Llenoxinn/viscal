@@ -1,26 +1,70 @@
-/**
- * EngineSelector
- * Tab row at the top of the canvas area for switching between engines.
- */
-export default function EngineSelector({ active, onChange }) {
-  const engines = [
-    { key: 'lissajous', label: 'Lissajous' },
-    { key: 'lsystem',   label: 'L-System'  },
-    { key: 'rd',        label: 'React-Diff' },
-  ]
+import Icon, { CurveMark } from './Icon'
 
+export const ENGINES = [
+  {
+    key: 'lissajous',
+    label: 'Lissajous curves',
+    description: 'Find harmony in oscillation',
+    tag: 'PARAMETRIC'
+  },
+  {
+    key: 'lsystem',
+    label: 'L-Systems',
+    description: 'Simple rules. Complex worlds.',
+    tag: 'FRACTAL'
+  },
+  {
+    key: 'rd',
+    label: 'Reaction diffusion',
+    description: 'Let organic patterns emerge',
+    tag: 'SIMULATION'
+  }
+]
+
+export default function EngineSelector({ active, onChange }) {
   return (
-    <div className="flex border-b border-border bg-panel px-4">
-      {engines.map(({ key, label }) => (
+    <div
+      className="engine-selector"
+      role="tablist"
+      aria-label="Generative engines"
+    >
+      {ENGINES.map(({ key, label, description, tag }, index) => (
         <button
           key={key}
+          id={`tab-${key}`}
+          role="tab"
+          aria-selected={active === key}
+          aria-controls={`panel-${key}`}
+          tabIndex={active === key ? 0 : -1}
+          className={`engine-tab ${active === key ? 'selected' : ''}`}
           onClick={() => onChange(key)}
-          className={`px-4 py-2 text-xs font-mono tracking-widest uppercase transition-colors border-b-2 -mb-px
-            ${active === key
-              ? 'border-accent text-accent'
-              : 'border-transparent text-muted hover:text-white'}`}
+          onKeyDown={(event) => {
+            let next
+            if (event.key === 'ArrowRight') next = (index + 1) % ENGINES.length
+            if (event.key === 'ArrowLeft')
+              next = (index + ENGINES.length - 1) % ENGINES.length
+            if (event.key === 'Home') next = 0
+            if (event.key === 'End') next = ENGINES.length - 1
+            if (next === undefined) return
+            event.preventDefault()
+            onChange(ENGINES[next].key)
+            document.getElementById(`tab-${ENGINES[next].key}`).focus()
+          }}
         >
-          {label}
+          <span className="engine-art">
+            <CurveMark variant={key} />
+          </span>
+          <span className="engine-copy">
+            <span className="engine-overline">
+              0{index + 1}
+              <span>{tag}</span>
+            </span>
+            <span className="engine-title">{label}</span>
+            <span className="engine-description">{description}</span>
+          </span>
+          <span className="engine-arrow">
+            <Icon name={active === key ? 'check' : 'chevron'} size={16} />
+          </span>
         </button>
       ))}
     </div>

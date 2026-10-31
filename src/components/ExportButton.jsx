@@ -1,40 +1,63 @@
-import { exportPNG, exportSVG, exportHighResPNG } from '../hooks/useExport'
+import { useId, useState } from 'react'
+import { exportPNG, exportSVG } from '../hooks/useExport'
+import Icon from './Icon'
 
-/**
- * ExportButton
- * Renders PNG / SVG / 2x export buttons.
- * Pass canvasRef for PNG engines, svgRef for L-system.
- *
- * @param {React.RefObject} canvasRef - canvas element ref (Lissajous, RD)
- * @param {React.RefObject} svgRef    - svg element ref (L-system)
- * @param {string}          filename  - base filename without extension
- */
-export default function ExportButton({ canvasRef, svgRef, filename = 'viscal' }) {
+export default function ExportButton({
+  canvasRef,
+  svgRef,
+  filename = 'viscal',
+  disabled = false
+}) {
+  const id = useId()
+  const [format, setFormat] = useState('png')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  async function download() {
+    setBusy(true)
+    setMessage('')
+    try {
+      if (format === 'svg') exportSVG(svgRef, filename)
+      else
+        await exportPNG(
+          svgRef || canvasRef,
+          filename,
+          format === 'png2' ? 2 : 1
+        )
+      setMessage('Artwork downloaded.')
+    } catch (error) {
+      setMessage(`Export failed. ${error.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
-    <div className="absolute bottom-4 right-4 flex gap-2 z-10">
-      {canvasRef && (
-        <>
-          <button
-            onClick={() => exportPNG(canvasRef, filename)}
-            className="px-3 py-1.5 text-xs font-mono bg-black/60 backdrop-blur-sm border border-border text-muted hover:text-accent hover:border-accent rounded transition-colors"
-          >
-            png
-          </button>
-          <button
-            onClick={() => exportHighResPNG(canvasRef, filename)}
-            className="px-3 py-1.5 text-xs font-mono bg-black/60 backdrop-blur-sm border border-border text-muted hover:text-accent hover:border-accent rounded transition-colors"
-          >
-            png 2x
-          </button>
-        </>
-      )}
-      {svgRef && (
-        <button
-          onClick={() => exportSVG(svgRef, filename)}
-          className="px-3 py-1.5 text-xs font-mono bg-black/60 backdrop-blur-sm border border-border text-muted hover:text-accent hover:border-accent rounded transition-colors"
-        >
-          svg
-        </button>
+    <div className="export-control">
+      <label htmlFor={id} className="sr-only">
+        Export format
+      </label>
+      <select
+        id={id}
+        value={format}
+        onChange={(event) => setFormat(event.target.value)}
+        aria-label="Export format"
+      >
+        <option value="png">PNG</option>
+        <option value="png2">PNG 2×</option>
+        {svgRef && <option value="svg">SVG</option>}
+      </select>
+      <button
+        className="button export-button"
+        onClick={download}
+        disabled={busy || disabled}
+      >
+        <Icon name="download" size={15} />
+        <span>{busy ? 'Exporting…' : 'Export'}</span>
+      </button>
+      <span className="export-status sr-only" role="status">
+        {message}
+      </span>
+      {message.startsWith('Export failed') && (
+        <span className="export-error">{message}</span>
       )}
     </div>
   )

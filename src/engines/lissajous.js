@@ -13,47 +13,33 @@
  * @param {number} params.A       - x amplitude [0,1]
  * @param {number} params.B       - y amplitude [0,1]
  * @param {number} params.points  - sample count
- * @returns {{ x: number[], y: number[] }} normalized to [-1, 1]
+ * @returns {{ x: Float32Array, y: Float32Array }} normalized to [-1, 1]
  */
 export function computeLissajous({ a, b, delta, A = 1, B = 1, points = 2000 }) {
-  const xs = []
-  const ys = []
+  if (
+    ![a, b, delta, A, B].every(Number.isFinite) ||
+    !Number.isInteger(points) ||
+    points < 1 ||
+    points > 100_000
+  ) {
+    throw new RangeError(
+      'Use finite curve parameters and 1–100,000 sample points.'
+    )
+  }
+  const xs = new Float32Array(points + 1)
+  const ys = new Float32Array(points + 1)
   for (let i = 0; i <= points; i++) {
     const t = (i / points) * 2 * Math.PI
-    xs.push(A * Math.sin(a * t + delta))
-    ys.push(B * Math.sin(b * t))
+    xs[i] = A * Math.sin(a * t + delta)
+    ys[i] = B * Math.sin(b * t)
   }
   return { x: xs, y: ys }
 }
 
-/**
- * @param {CanvasRenderingContext2D} ctx
- * @param {{ x: number[], y: number[] }} points
- * @param {{ strokeColor?: string, strokeWidth?: number, alpha?: number }} style
- */
-export function drawLissajous(ctx, points, style = {}) {
-  const { strokeColor = '#b5f0a5', strokeWidth = 1.5, alpha = 1 } = style
-  const { width, height } = ctx.canvas
-  const cx = width / 2
-  const cy = height / 2
-  const scaleX = width * 0.45
-  const scaleY = height * 0.45
-
-  ctx.clearRect(0, 0, width, height)
-  ctx.globalAlpha = alpha
-  ctx.strokeStyle = strokeColor
-  ctx.lineWidth = strokeWidth
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.beginPath()
-
-  for (let i = 0; i < points.x.length; i++) {
-    const px = cx + points.x[i] * scaleX
-    const py = cy + points.y[i] * scaleY
-    if (i === 0) ctx.moveTo(px, py)
-    else ctx.lineTo(px, py)
-  }
-
-  ctx.stroke()
-  ctx.globalAlpha = 1
+export const LISS_PRESETS = {
+  weave: { label: 'Weave · 5 : 4', a: 5, b: 4, delta: 1.57 },
+  orbit: { label: 'Orbit · 3 : 2', a: 3, b: 2, delta: 0.78 },
+  bloom: { label: 'Bloom · 7 : 6', a: 7, b: 6, delta: 1.57 },
+  ribbon: { label: 'Ribbon · 2 : 3', a: 2, b: 3, delta: 0 },
+  harmony: { label: 'Harmony · 9 : 8', a: 9, b: 8, delta: 0.78 }
 }

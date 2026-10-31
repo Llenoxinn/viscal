@@ -1,129 +1,194 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
-import { createGrid, stepGrid, renderGrid, RD_PRESETS } from '../engines/grayscott'
+import { useRef, useState, useCallback, useEffect, useId } from 'react'
+import {
+  createGrid,
+  seedGrid,
+  stepGrid,
+  renderGrid,
+  RD_PRESETS
+} from '../engines/grayscott'
 import { COLORMAPS } from '../utils/colormap'
 import { useAnimationLoop } from '../hooks/useAnimationLoop'
-import ControlPanel from './ControlPanel'
+import ControlPanel, { PresetSelector } from './ControlPanel'
 import ExportButton from './ExportButton'
+import StudioLayout from './StudioLayout'
+import Icon from './Icon'
 
-const GRID_W = 200
-const GRID_H = 150
+const GRID_W = 240,
+  GRID_H = 180
+const DEFAULTS = { ...RD_PRESETS.spots, Da: 1, Db: 0.5, dt: 1, steps: 8 }
+const CONTROLS = [
+  { label: 'Feed rate', key: 'f', min: 0.01, max: 0.1, step: 0.001 },
+  { label: 'Kill rate', key: 'k', min: 0.04, max: 0.08, step: 0.001 },
+  { label: 'Diffusion A', key: 'Da', min: 0.1, max: 2, step: 0.05 },
+  { label: 'Diffusion B', key: 'Db', min: 0.1, max: 1, step: 0.05 },
+  { label: 'Steps per frame', key: 'steps', min: 1, max: 16 }
+]
 
-const DEFAULT_PARAMS = {
-  f: 0.055,
-  k: 0.062,
-  Da: 1.0,
-  Db: 0.5,
-  dt: 1.0,
-  steps: 8,
-}
-
-/**
- * RDCanvas
- * Animated reaction-diffusion simulation rendered to a scaled canvas.
- */
-export default function RDCanvas() {
+export default function RDCanvas({ active }) {
   const canvasRef = useRef(null)
-  const stateRef  = useRef(createGrid(GRID_W, GRID_H))
-  const [params, setParams] = useState(DEFAULT_PARAMS)
-  const paramsRef = useRef(params)
-  const [running, setRunning]   = useState(true)
+  const stateRef = useRef(null)
+  const pointerRef = useRef(null)
+  const warmedRef = useRef(false)
+  if (!stateRef.current) stateRef.current = createGrid(GRID_W, GRID_H)
+  const [params, setParams] = useState(DEFAULTS)
+  const [running, setRunning] = useState(
+    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
   const [colormap, setColormap] = useState('green')
-  const [preset, setPreset]     = useState('spots')
+  const [preset, setPreset] = useState('spots')
+  const paletteId = useId()
 
-  useEffect(() => { paramsRef.current = params }, [params])
-
-  const tick = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    stepGrid(stateRef.current, paramsRef.current)
-    const ctx = canvas.getContext('2d')
-    renderGrid(ctx, stateRef.current, COLORMAPS[colormap].fn)
+  const draw = useCallback(() => {
+    const context = canvasRef.current?.getContext('2d')
+    if (context) renderGrid(context, stateRef.current, COLORMAPS[colormap].fn)
   }, [colormap])
+  useEffect(() => {
+    if (!active) return
+    if (!warmedRef.current) {
+      stepGrid(stateRef.current, { ...params, steps: 100 })
+      warmedRef.current = true
+    }
+    draw()
+  }, [active, draw, params])
 
-  useAnimationLoop(tick, running)
+  useAnimationLoop(() => {
+    stepGrid(stateRef.current, params)
+    draw()
+  }, active && running)
 
-  const reset = () => {
+  function resetGrid(nextParams = params) {
     stateRef.current = createGrid(GRID_W, GRID_H)
+    stepGrid(stateRef.current, { ...nextParams, steps: 100 })
+    draw()
   }
-
-  const handlePreset = (name) => {
-    setPreset(name)
-    const p = RD_PRESETS[name]
-    setParams((prev) => ({ ...prev, f: p.f, k: p.k }))
-    reset()
+  function selectPreset(key) {
+    const next = { ...params, ...RD_PRESETS[key] }
+    setPreset(key)
+    setParams(next)
+    resetGrid(next)
   }
-
-  const controls = [
-    { label: 'feed rate (f)',   key: 'f',     type: 'range', min: 0.01, max: 0.1,  step: 0.001 },
-    { label: 'kill rate (k)',   key: 'k',     type: 'range', min: 0.04, max: 0.08, step: 0.001 },
-    { label: 'diffusion A',     key: 'Da',    type: 'range', min: 0.1,  max: 2.0,  step: 0.05  },
-    { label: 'diffusion B',     key: 'Db',    type: 'range', min: 0.1,  max: 1.0,  step: 0.05  },
-    { label: 'steps / frame',   key: 'steps', type: 'range', min: 1,    max: 20,   step: 1     },
-  ]
+  function paint(event) {
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = Math.min(rect.width / GRID_W, rect.height / GRID_H)
+    const x =
+      (event.clientX - rect.left - (rect.width - GRID_W * scale) / 2) / scale
+    const y =
+      (event.clientY - rect.top - (rect.height - GRID_H * scale) / 2) / scale
+    if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return
+    seedGrid(stateRef.current, x, y)
+    draw()
+  }
 
   return (
-    <div className="relative w-full h-full">
-      {/* Presets panel */}
-      <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-sm border border-border rounded p-2 flex flex-col gap-0.5 min-w-[110px]">
-        <p className="text-[10px] text-muted font-mono tracking-widest uppercase px-2 py-1">Presets</p>
-        {Object.entries(RD_PRESETS).map(([key, { label }]) => (
+    <StudioLayout
+      title="Reaction diffusion"
+      subtitle="A living pattern, grown from two virtual chemicals."
+      equation="∂B/∂t = Dᵦ∇²B + AB² − (f + k)B"
+      stats={`${GRID_W} × ${GRID_H} · ${running ? 'running' : 'paused'}`}
+      hint="Paint on the canvas to plant a new pattern."
+      onReset={() => {
+        setParams(DEFAULTS)
+        setPreset('spots')
+        setColormap('green')
+        resetGrid(DEFAULTS)
+      }}
+      onRandomize={() => {
+        const keys = Object.keys(RD_PRESETS)
+        selectPreset(keys[Math.floor(Math.random() * keys.length)])
+      }}
+      exports={
+        <ExportButton
+          canvasRef={canvasRef}
+          filename="viscal-reaction-diffusion"
+        />
+      }
+      toolbar={
+        <div className="simulation-actions">
           <button
-            key={key}
-            onClick={() => handlePreset(key)}
-            className={`px-2 py-1 text-xs font-mono rounded text-left transition-colors
-              ${preset === key
-                ? 'bg-accent/10 text-accent'
-                : 'text-muted hover:text-white hover:bg-white/5'}`}
+            className="button"
+            onClick={() => {
+              seedGrid(stateRef.current, GRID_W / 2, GRID_H / 2, 9)
+              draw()
+            }}
           >
-            {label}
+            Add seed
           </button>
-        ))}
-        <button
-          onClick={reset}
-          className="mt-1 px-2 py-1 text-xs font-mono rounded text-left text-muted hover:text-white hover:bg-white/5 transition-colors"
-        >
-          reset
-        </button>
-      </div>
-
+          <button
+            className="button play-button"
+            onClick={() => setRunning(!running)}
+            aria-pressed={running}
+          >
+            <Icon name={running ? 'pause' : 'play'} size={15} />
+            {running ? 'Pause' : 'Play'}
+          </button>
+        </div>
+      }
+      controls={
+        <>
+          <PresetSelector
+            presets={RD_PRESETS}
+            value={preset}
+            onChange={selectPreset}
+          />
+          <ControlPanel
+            controls={CONTROLS}
+            params={params}
+            onChange={(key, value) => {
+              setParams((previous) => ({ ...previous, [key]: value }))
+              if (key === 'f' || key === 'k') setPreset('custom')
+            }}
+          />
+          <div className="preset-control">
+            <label htmlFor={paletteId} className="section-label">
+              Color palette
+            </label>
+            <select
+              id={paletteId}
+              value={colormap}
+              onChange={(event) => setColormap(event.target.value)}
+            >
+              {Object.entries(COLORMAPS).map(([key, item]) => (
+                <option value={key} key={key}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="control-tip">
+            Let it grow for a moment. The best patterns take a little time.
+          </p>
+        </>
+      }
+    >
       <canvas
         ref={canvasRef}
         width={GRID_W}
         height={GRID_H}
-        className="w-full h-full bg-canvas"
-        style={{ imageRendering: 'pixelated' }}
+        className="rd-canvas"
+        role="img"
+        aria-label="Interactive reaction-diffusion pattern. Use Add seed to place a centered seed without painting."
+        onPointerDown={(event) => {
+          if (pointerRef.current !== null || event.button !== 0) return
+          pointerRef.current = event.pointerId
+          event.currentTarget.setPointerCapture(event.pointerId)
+          paint(event)
+        }}
+        onPointerMove={(event) => {
+          if (pointerRef.current === event.pointerId) paint(event)
+        }}
+        onPointerUp={(event) => {
+          if (pointerRef.current === event.pointerId) {
+            event.currentTarget.releasePointerCapture(event.pointerId)
+            pointerRef.current = null
+          }
+        }}
+        onPointerCancel={() => {
+          pointerRef.current = null
+        }}
+        onLostPointerCapture={() => {
+          pointerRef.current = null
+        }}
       />
-
-      {/* Colormap panel */}
-      <div className="absolute bottom-4 left-4 z-10 bg-black/60 backdrop-blur-sm border border-border rounded p-2 flex gap-1">
-        {Object.entries(COLORMAPS).map(([key, { label }]) => (
-          <button
-            key={key}
-            onClick={() => setColormap(key)}
-            className={`px-2 py-1 text-xs font-mono rounded transition-colors
-              ${colormap === key
-                ? 'bg-accent/10 text-accent'
-                : 'text-muted hover:text-white hover:bg-white/5'}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Play/pause */}
-      <button
-        onClick={() => setRunning((r) => !r)}
-        className="absolute bottom-4 right-36 z-10 px-3 py-1.5 text-xs font-mono bg-black/60 backdrop-blur-sm border border-border text-muted hover:text-white hover:border-accent rounded transition-colors"
-      >
-        {running ? 'pause' : 'play'}
-      </button>
-
-      <ControlPanel
-        controls={controls}
-        params={params}
-        onChange={(key, val) => setParams((p) => ({ ...p, [key]: val }))}
-      />
-      <ExportButton canvasRef={canvasRef} filename="viscal-rd" />
-    </div>
+    </StudioLayout>
   )
 }
